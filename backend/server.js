@@ -1,5 +1,12 @@
 const path = require('path');
 const dotenv = require('dotenv');
+require("dotenv").config();
+// 1. Require the AI Assistant route file
+const aiAssistantRouter = require("./routes/aiAssistant");
+
+
+
+
 
 dotenv.config({ path: path.join(__dirname, '.env') });
 
@@ -20,6 +27,9 @@ const ledgerRoutes = require('./routes/ledgerRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/ledger', ledgerRoutes);
+// 2. Mount it with your other API routes
+app.use("/api/ai", aiAssistantRouter);
+
 
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', service: 'Haqdar Core API' });
