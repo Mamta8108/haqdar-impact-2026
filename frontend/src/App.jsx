@@ -8,6 +8,7 @@ import CertificateView from './components/CertificateView';
 import PublicVerifyView from './components/PublicVerifyView';
 import Footer from './components/Footer';
 import { getWorkers, getEmployers } from './services/api';
+import HaqdarSahayak from "./components/HaqdarSahayak";
 
 function App() {
   const [activeTab, setActiveTab] = useState('home');
@@ -17,8 +18,8 @@ function App() {
   const loadUsers = async () => {
     try {
       const [wRes, eRes] = await Promise.all([getWorkers(), getEmployers()]);
-      setWorkers(wRes.data.workers || []);
-      setEmployers(eRes.data.employers || []);
+      setWorkers(wRes.data?.workers || wRes.data || []);
+      setEmployers(eRes.data?.employers || eRes.data || []);
     } catch (err) {
       console.error('Failed to fetch users:', err);
     }
@@ -27,6 +28,14 @@ function App() {
   useEffect(() => {
     loadUsers();
   }, []);
+
+  // Worker context to feed into Haqdar Sahayak AI
+  const activeWorkerContext = workers.length > 0 ? {
+    name: workers[0].name || workers[0].fullName,
+    totalShifts: workers[0].shifts?.length || workers[0].totalShifts || 0,
+    pendingWages: workers[0].pendingWages || 0,
+    approvedWages: workers[0].approvedWages || 0
+  } : null;
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -42,6 +51,9 @@ function App() {
         {activeTab === 'cert' && <CertificateView workers={workers} />}
         {activeTab === 'verify' && <PublicVerifyView />}
       </main>
+
+      {/* Floating AI Assistant for Workers */}
+      <HaqdarSahayak workerData={activeWorkerContext} />
 
       <Footer setActiveTab={setActiveTab} />
     </div>
