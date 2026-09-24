@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { ShieldCheck, Languages, Home } from 'lucide-react';
+import { ShieldCheck, Languages } from 'lucide-react';
 
 const Navbar = ({ activeTab, setActiveTab }) => {
   const { lang, toggleLang, t } = useLanguage();
@@ -17,22 +17,23 @@ const Navbar = ({ activeTab, setActiveTab }) => {
   return (
     <header
       style={{
-        background: '#1F2E4A',
+        background: '#0f172a',
         color: '#FFFFFF',
-        padding: '10px 16px',
+        padding: '12px 16px',
         position: 'sticky',
         top: 0,
         zIndex: 50,
-        boxShadow: '0 2px 10px rgba(0,0,0,0.12)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)',
       }}
     >
       <div
         style={{
-          maxWidth: 720,
+          maxWidth: 760,
           margin: '0 auto',
           display: 'flex',
           flexDirection: 'column',
-          gap: 10,
+          gap: 12,
         }}
       >
         {/* Brand Header */}
@@ -45,31 +46,33 @@ const Navbar = ({ activeTab, setActiveTab }) => {
         >
           <div
             onClick={() => setActiveTab('home')}
-            style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
           >
             <div
               style={{
-                width: 38,
-                height: 38,
-                borderRadius: 10,
-                background: 'linear-gradient(135deg, #D4AF37 0%, #C28800 100%)',
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 2px 6px rgba(194, 136, 0, 0.4)',
+                boxShadow: '0 4px 12px rgba(245, 158, 11, 0.35)',
+                flexShrink: 0,
               }}
             >
               <ShieldCheck color="#FFFFFF" size={24} strokeWidth={2.4} />
             </div>
             <div>
-              <div style={{ fontWeight: 700, fontSize: 18, lineHeight: 1.2 }}>
+              <div style={{ fontWeight: 800, fontSize: 18, lineHeight: 1.2, letterSpacing: '-0.01em' }}>
                 {t.brand}
               </div>
               <div
                 style={{
-                  fontSize: 10,
-                  color: '#B7C2DD',
-                  letterSpacing: '0.02em',
+                  fontSize: 11,
+                  color: '#94a3b8',
+                  letterSpacing: '0.01em',
+                  marginTop: 2,
                 }}
               >
                 {t.tagline}
@@ -81,33 +84,37 @@ const Navbar = ({ activeTab, setActiveTab }) => {
             type="button"
             onClick={toggleLang}
             style={{
-              background: 'rgba(255,255,255,0.12)',
-              color: '#FFFFFF',
-              border: '1px solid rgba(255,255,255,0.2)',
+              background: 'rgba(255, 255, 255, 0.08)',
+              color: '#f8fafc',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
               borderRadius: 20,
-              padding: '5px 12px',
+              padding: '6px 14px',
               display: 'flex',
               alignItems: 'center',
               gap: 6,
               fontSize: 12,
               fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
             }}
           >
-            <Languages size={14} />
+            <Languages size={15} color="#fbbf24" />
             {lang === 'hi' ? 'English' : 'हिन्दी'}
           </button>
         </div>
 
-        {/* Tab Navigation Pill Bar */}
+        {/* Tab Navigation Pill Bar with Smooth Horizontal Overflow */}
         <nav
           style={{
             display: 'flex',
-            justifyContent: 'space-between',
             alignItems: 'center',
-            background: 'rgba(255,255,255,0.06)',
-            padding: 4,
-            borderRadius: 10,
+            background: 'rgba(255, 255, 255, 0.05)',
+            padding: '4px',
+            borderRadius: 12,
             gap: 4,
+            overflowX: 'auto',
+            scrollbarWidth: 'none', // Firefox
+            msOverflowStyle: 'none', // IE/Edge
           }}
         >
           {navItems.map((item) => {
@@ -118,17 +125,21 @@ const Navbar = ({ activeTab, setActiveTab }) => {
                 type="button"
                 onClick={() => setActiveTab(item.id)}
                 style={{
-                  flex: 1,
-                  background: isActive ? '#C28800' : 'transparent',
-                  color: isActive ? '#FFFFFF' : '#B7C2DD',
+                  flex: '1 0 auto',
+                  background: isActive
+                    ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+                    : 'transparent',
+                  color: isActive ? '#FFFFFF' : '#94a3b8',
                   border: 'none',
-                  borderRadius: 6,
-                  padding: '8px 2px',
+                  borderRadius: 8,
+                  padding: '8px 12px',
                   fontWeight: isActive ? 700 : 500,
                   fontSize: 12,
                   textAlign: 'center',
+                  cursor: 'pointer',
                   transition: 'all 0.15s ease-in-out',
                   whiteSpace: 'nowrap',
+                  boxShadow: isActive ? '0 2px 8px rgba(245, 158, 11, 0.3)' : 'none',
                 }}
               >
                 {item.label}

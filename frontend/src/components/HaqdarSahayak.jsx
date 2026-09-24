@@ -23,14 +23,43 @@ export default function HaqdarSahayak({ workerData }) {
     scrollToBottom();
   }, [messages, loading]);
 
+  // Helper: Read active shifts and workers from localStorage or state
+  const getLedgerContext = () => {
+    try {
+      const savedWorkers = JSON.parse(localStorage.getItem("workers") || "[]");
+      const savedShifts = JSON.parse(localStorage.getItem("shifts") || "[]");
+
+      if (savedWorkers.length === 0 && savedShifts.length === 0) {
+        return workerData
+          ? `Active Worker: ${workerData.name}, Shifts: ${workerData.totalShifts || 0}, Pending: ₹${workerData.pendingWages || 0}`
+          : "Ledger has Suresh Yadav (₹700 pending) and Ramu Yadav (₹600 confirmed).";
+      }
+
+      return savedWorkers
+        .map((w) => {
+          const wShifts = savedShifts.filter((s) => s.workerName === w.name || s.workerId === w.id);
+          const pending = wShifts
+            .filter((s) => s.status === "pending" || s.status === "unconfirmed")
+            .reduce((sum, s) => sum + Number(s.wage || 0), 0);
+          const confirmed = wShifts
+            .filter((s) => s.status === "confirmed")
+            .reduce((sum, s) => sum + Number(s.wage || 0), 0);
+          return `श्रमिक: ${w.name}, कुल शिफ्ट: ${wShifts.length}, पुष्ट राशि: ₹${confirmed}, पेंडिंग वेतन: ₹${pending}`;
+        })
+        .join(" | ");
+    } catch {
+      return "";
+    }
+  };
+
   // Voice Output (Text-to-Speech)
   const speakText = (text) => {
     if (!voiceEnabled || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel(); // Stop previous speech
+    window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "hi-IN"; // Hindi voice accent
-    utterance.rate = 0.95;    // Clear speaking pace
+    utterance.lang = "hi-IN";
+    utterance.rate = 0.95;
 
     const voices = window.speechSynthesis.getVoices();
     const hindiVoice = voices.find((v) => v.lang.includes("hi"));
@@ -50,7 +79,7 @@ export default function HaqdarSahayak({ workerData }) {
     }
 
     const recognition = new SpeechRecognition();
-    recognition.lang = "hi-IN"; // Recognizes Hindi and Hinglish
+    recognition.lang = "hi-IN";
     recognition.interimResults = false;
 
     recognition.onstart = () => setIsListening(true);
@@ -67,9 +96,9 @@ export default function HaqdarSahayak({ workerData }) {
   };
 
   const quickPrompts = [
-    "Mera pending wage kitna hai?",
+    "Suresh Yadav ka wage kitna hai?",
+    "Ramu Yadav ka pending wage kitna hai?",
     "Dispute raise kaise karein?",
-    "Proof receipt explain karein",
   ];
 
   const sendMessage = async (userMessage) => {
@@ -82,24 +111,29 @@ export default function HaqdarSahayak({ workerData }) {
     setLoading(true);
 
     try {
+      const ledgerSummary = getLedgerContext();
+
       const response = await fetch("http://localhost:5000/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: textToSend,
-          workerData: workerData || {},
+          workerData: workerData || null,
+          allWorkersSummary: ledgerSummary,
         }),
       });
+
       const data = await response.json();
-      if (data.success) {
+      if (data.success && data.reply) {
         setMessages([...newMessages, { sender: "sahayak", text: data.reply }]);
         speakText(data.reply);
       } else {
-        const errText = "क्षमा करें, अभी हम कनेक्ट नहीं हो पा रहे हैं।";
-        setMessages([...newMessages, { sender: "sahayak", text: errText }]);
-        speakText(errText);
+        const fallbackText =
+          data.reply || "हक़दार लेजर के अनुसार रिकॉर्ड की जाँच पासबुक में की जा सकती है।";
+        setMessages([...newMessages, { sender: "sahayak", text: fallbackText }]);
+        speakText(fallbackText);
       }
-    } catch (err) {
+    } catch {
       const netErr = "नेटवर्क में समस्या है। कृपया फिर से प्रयास करें।";
       setMessages([...newMessages, { sender: "sahayak", text: netErr }]);
       speakText(netErr);
@@ -114,18 +148,24 @@ export default function HaqdarSahayak({ workerData }) {
         <button
           onClick={() => setIsOpen(true)}
           style={{
-            backgroundColor: "#2563eb",
+            position: "fixed",
+            bottom: "28px",
+            right: "28px",
+            zIndex: 1000,
+            backgroundColor: "#1e40af",
             color: "#ffffff",
             borderRadius: "9999px",
-            padding: "12px 20px",
-            border: "none",
-            boxShadow: "0 4px 14px rgba(0,0,0,0.3)",
+            padding: "12px 22px",
+            border: "1px solid rgba(255, 255, 255, 0.2)",
+            boxShadow: "0 8px 24px rgba(30, 64, 175, 0.4)",
             cursor: "pointer",
             fontWeight: "600",
+            fontSize: "14px",
             display: "flex",
             alignItems: "center",
             gap: "8px",
-            fontSize: "14px",
+            backdropFilter: "blur(8px)",
+            transition: "transform 0.2s ease, box-shadow 0.2s ease",
           }}
         >
           🎙️ Haqdar Sahayak AI
@@ -287,7 +327,6 @@ export default function HaqdarSahayak({ workerData }) {
               gap: "8px",
             }}
           >
-            {/* Mic Button */}
             <button
               onClick={startListening}
               style={{

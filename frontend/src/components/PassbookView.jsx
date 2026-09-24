@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { ShieldCheck, ShieldAlert, Volume2, Check, Clock } from 'lucide-react';
 import { getWorkerPassbook, confirmOtp, triggerTamperTest, simulate24Hours, repairWorkerChain } from '../services/api';
+import HaqdarSahayak from './HaqdarSahayak';
+
 
 const PassbookView = ({ workers }) => {
   const { t } = useLanguage();
@@ -304,6 +306,33 @@ const PassbookView = ({ workers }) => {
           ))}
         </>
       )}
+
+      {/* Live Voice AI Widget connected to the active passbook */}
+      <HaqdarSahayak
+        workerData={
+          selectedWorker && passbookData
+            ? {
+                name: workers.find((w) => w._id === selectedWorker)?.name || 'Ramesh Yadav',
+                phone: workers.find((w) => w._id === selectedWorker)?.phone || '',
+                totalShifts: passbookData.entries?.length || 1,
+                confirmedDays: confirmedEntries.length,
+                totalEarned: totalEarnings,
+                pendingWages: passbookData.entries
+                  ?.filter((e) => e.status === 'pending')
+                  ?.reduce((s, e) => s + (e.agreedWage || 0), 0),
+                employers: [
+                  ...new Set(
+                    passbookData.entries
+                      ?.map((e) => e.employerId?.businessName || e.employerId?.name)
+                      .filter(Boolean)
+                  ),
+                ].join(', '),
+                isChainIntact: passbookData.isChainIntact,
+              }
+            : null
+        }
+      />
+    
     </div>
   );
 };

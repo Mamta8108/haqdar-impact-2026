@@ -53,7 +53,7 @@ function App() {
       </main>
 
       {/* Floating AI Assistant for Workers */}
-      <HaqdarSahayak workerData={activeWorkerContext} />
+      //<HaqdarSahayak workerData={activeWorkerContext} />
 
       <Footer setActiveTab={setActiveTab} />
     </div>
