@@ -19,17 +19,19 @@ function App() {
 
   const loadUsers = async () => {
     try {
-      const [wRes, eRes] = await Promise.all([getWorkers(), getEmployers()]);
-      const workerList = wRes.data?.workers || wRes.data || [];
-      const employerList = eRes.data?.employers || eRes.data || [];
-      setWorkers(workerList);
-      setEmployers(employerList);
+      const [wRes, eRes] = await Promise.allSettled([getWorkers(), getEmployers()]);
+      const workerList = (wRes.status === 'fulfilled' && (wRes.value?.data?.workers || wRes.value?.data)) || [];
+      const employerList = (eRes.status === 'fulfilled' && (eRes.value?.data?.employers || eRes.value?.data)) || [];
+      setWorkers(Array.isArray(workerList) ? workerList : []);
+      setEmployers(Array.isArray(employerList) ? employerList : []);
 
-      if (!selectedWorkerId && workerList.length > 0) {
-        setSelectedWorkerId(workerList[0]._id);
+      if (workerList.length > 0) {
+        setSelectedWorkerId((prev) => prev || workerList[0]._id);
       }
     } catch (err) {
       console.error('Failed to fetch users:', err);
+      setWorkers([]);
+      setEmployers([]);
     }
   };
 
@@ -43,7 +45,9 @@ function App() {
       try {
         const worker = workers.find((w) => w._id === selectedWorkerId);
         const res = await getWorkerPassbook(selectedWorkerId);
-        const passbook = res.data;
+        const passbook = res?.data;
+
+        if (!passbook) return;
 
         const confirmed = passbook.entries?.filter((e) => e.status === 'confirmed') || [];
         const pending = passbook.entries?.filter((e) => e.status === 'pending') || [];
@@ -67,7 +71,7 @@ function App() {
           totalEarned: totalEarned,
           pendingWages: pendingWages,
           employers: employerNames || 'दर्ज नहीं',
-          isChainIntact: passbook.isChainIntact,
+          isChainIntact: passbook.isChainIntact ?? true,
         });
       } catch (err) {
         console.error('Failed to load worker ledger for AI:', err);
