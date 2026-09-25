@@ -7,19 +7,27 @@ import PassbookView from './components/PassbookView';
 import CertificateView from './components/CertificateView';
 import PublicVerifyView from './components/PublicVerifyView';
 import Footer from './components/Footer';
-import { getWorkers, getEmployers } from './services/api';
-import HaqdarSahayak from "./components/HaqdarSahayak";
+import { getWorkers, getEmployers, getWorkerPassbook } from './services/api';
+import HaqdarSahayak from './components/HaqdarSahayak';
 
 function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [workers, setWorkers] = useState([]);
   const [employers, setEmployers] = useState([]);
+  const [selectedWorkerId, setSelectedWorkerId] = useState('');
+  const [activeWorkerContext, setActiveWorkerContext] = useState(null);
 
   const loadUsers = async () => {
     try {
       const [wRes, eRes] = await Promise.all([getWorkers(), getEmployers()]);
-      setWorkers(wRes.data?.workers || wRes.data || []);
-      setEmployers(eRes.data?.employers || eRes.data || []);
+      const workerList = wRes.data?.workers || wRes.data || [];
+      const employerList = eRes.data?.employers || eRes.data || [];
+      setWorkers(workerList);
+      setEmployers(employerList);
+
+      if (!selectedWorkerId && workerList.length > 0) {
+        setSelectedWorkerId(workerList[0]._id);
+      }
     } catch (err) {
       console.error('Failed to fetch users:', err);
     }
@@ -29,13 +37,45 @@ function App() {
     loadUsers();
   }, []);
 
-  // Worker context to feed into Haqdar Sahayak AI
-  const activeWorkerContext = workers.length > 0 ? {
-    name: workers[0].name || workers[0].fullName,
-    totalShifts: workers[0].shifts?.length || workers[0].totalShifts || 0,
-    pendingWages: workers[0].pendingWages || 0,
-    approvedWages: workers[0].approvedWages || 0
-  } : null;
+  useEffect(() => {
+    const fetchWorkerLedger = async () => {
+      if (!selectedWorkerId) return;
+      try {
+        const worker = workers.find((w) => w._id === selectedWorkerId);
+        const res = await getWorkerPassbook(selectedWorkerId);
+        const passbook = res.data;
+
+        const confirmed = passbook.entries?.filter((e) => e.status === 'confirmed') || [];
+        const pending = passbook.entries?.filter((e) => e.status === 'pending') || [];
+
+        const totalEarned = confirmed.reduce((sum, e) => sum + (e.agreedWage || 0), 0);
+        const pendingWages = pending.reduce((sum, e) => sum + (e.agreedWage || 0), 0);
+
+        const employerNames = [
+          ...new Set(
+            passbook.entries
+              ?.map((e) => e.employerId?.businessName || e.employerId?.name)
+              .filter(Boolean)
+          ),
+        ].join(', ');
+
+        setActiveWorkerContext({
+          name: worker?.name || 'कामगार',
+          phone: worker?.phone || '',
+          totalShifts: passbook.entries?.length || 0,
+          confirmedDays: confirmed.length,
+          totalEarned: totalEarned,
+          pendingWages: pendingWages,
+          employers: employerNames || 'दर्ज नहीं',
+          isChainIntact: passbook.isChainIntact,
+        });
+      } catch (err) {
+        console.error('Failed to load worker ledger for AI:', err);
+      }
+    };
+
+    fetchWorkerLedger();
+  }, [selectedWorkerId, workers]);
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -47,13 +87,18 @@ function App() {
         {activeTab === 'log' && (
           <WorkLogger workers={workers} employers={employers} onEntryLogged={loadUsers} />
         )}
-        {activeTab === 'passbook' && <PassbookView workers={workers} />}
+        {activeTab === 'passbook' && (
+          <PassbookView 
+            workers={workers} 
+            selectedWorker={selectedWorkerId}
+            onSelectWorker={setSelectedWorkerId}
+          />
+        )}
         {activeTab === 'cert' && <CertificateView workers={workers} />}
         {activeTab === 'verify' && <PublicVerifyView />}
       </main>
 
-      {/* Floating AI Assistant for Workers */}
-      //<HaqdarSahayak workerData={activeWorkerContext} />
+      <HaqdarSahayak workerData={activeWorkerContext} />
 
       <Footer setActiveTab={setActiveTab} />
     </div>

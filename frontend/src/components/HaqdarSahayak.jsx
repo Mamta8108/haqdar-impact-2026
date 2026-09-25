@@ -1,3 +1,4 @@
+frontend/src/components/HaqdarSahayak.jsx
 import React, { useState, useEffect, useRef } from "react";
 
 export default function HaqdarSahayak({ workerData }) {
