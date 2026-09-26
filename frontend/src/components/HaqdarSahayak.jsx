@@ -113,7 +113,8 @@ export default function HaqdarSahayak({ workerData }) {
     try {
       const ledgerSummary = getLedgerContext();
 
-      const response = await fetch("http://localhost:5000/api/ai/chat", {
+const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://haqdar-api.onrender.com";
+      const response = await fetch(`${baseUrl}/api/ai/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
